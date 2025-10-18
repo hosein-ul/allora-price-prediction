@@ -1,250 +1,435 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ردیاب زنده پیش‌بینی Allora (v7 API)</title>
-    <!-- Load Tailwind CSS -->
+    <title>Allora Prediction Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Configure Tailwind theme and font -->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
         
         :root {
-            font-family: 'Vazirmatn', sans-serif;
+            font-family: 'Inter', sans-serif;
         }
 
-        /* Custom styling for the prediction cards */
-        .prediction-card {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
-            transition: transform 0.3s ease;
+        .gradient-bg {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
         }
-        .prediction-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+        
+        /* Base Button Styles */
+        .platform-btn {
+            @apply px-5 py-2 rounded-xl font-semibold text-base transition duration-200 ease-in-out;
+            user-select: none; /* Prevents text selection on rapid clicks */
+        }
+        
+        /* Active (Selected) Button */
+        .active-btn {
+            @apply bg-indigo-600 text-white shadow-xl shadow-indigo-600/50 border-2 border-indigo-500 transform scale-100 ring-4 ring-indigo-500/30;
+        }
+
+        /* Inactive Button */
+        .inactive-btn {
+            @apply bg-gray-700/50 text-gray-300 border border-gray-600 hover:bg-indigo-700/60 hover:text-white;
+        }
+        
+        /* NEW: Active State Feedback (when holding click) */
+        .platform-btn:active:not(.active-btn) {
+            @apply bg-indigo-500/80 transform scale-[0.98] transition duration-75;
+        }
+        
+        .active-btn:active {
+            @apply transform scale-[0.99] shadow-inner;
+        }
+
+
+        /* Advanced Data Card Styles */
+        .data-card {
+            @apply p-6 rounded-2xl border border-gray-700 transition duration-300 ease-in-out shadow-lg;
         }
     </style>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 md:p-8">
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
 
-    <div class="max-w-7xl mx-auto">
-        <!-- Title and Description -->
-        <header class="text-center mb-10">
-            <h1 class="text-4xl font-extrabold text-indigo-600 dark:text-indigo-400">ردیاب زنده اوراکل Allora</h1>
-            <p class="mt-2 text-xl text-gray-600 dark:text-gray-400">پیش‌بینی‌های هوش مصنوعی شبکه Allora برای قیمت ارزهای دیجیتال</p>
-            <div id="status-message" class="mt-4 p-2 text-sm font-medium rounded-lg bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
-                در حال بارگذاری داده‌ها... (استفاده از Endpoint قدیمی v7)
-            </div>
+    <div class="max-w-6xl w-full mx-auto">
+        <header class="text-center mb-12 mt-4">
+            <h1 class="text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-indigo-200 mb-2">Allora Prediction Platform</h1>
+            <p class="mt-2 text-xl text-indigo-300">Select an Asset, Timeframe, and View Oracle Data</p>
         </header>
 
-        <!-- Prediction Cards Container -->
-        <div id="predictions-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Cards will be added here by JavaScript -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-1 bg-gray-800 p-6 rounded-2xl shadow-2xl border border-gray-700 h-fit space-y-8">
+                
+                <div>
+                    <h2 class="text-2xl font-bold mb-4 text-indigo-400 border-b border-gray-700 pb-3">1. Select Asset Pair</h2>
+                    
+                    <div id="asset-selector" class="grid grid-cols-2 gap-3">
+                        <button data-asset="BTC/USD" class="asset-btn platform-btn inactive-btn">BTC/USD</button>
+                        <button data-asset="ETH/USD" class="asset-btn platform-btn inactive-btn">ETH/USD</button>
+                        <button data-asset="SOL/USD" class="asset-btn platform-btn inactive-btn">SOL/USD</button>
+                        <button data-asset="BNB" class="asset-btn platform-btn inactive-btn">BNB</button>
+                        <button data-asset="ETH/USDC" class="asset-btn platform-btn inactive-btn">ETH/USDC</button>
+                    </div>
+                </div>
+                
+                <div>
+                    <h2 class="text-2xl font-bold mb-4 text-indigo-400 border-b border-gray-700 pb-3">2. Select Timeframe</h2>
+
+                    <div id="timeframe-container" class="grid grid-cols-3 gap-3">
+                        <p class="col-span-3 text-gray-500 text-sm">Please select an asset first.</p>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900 p-4 rounded-xl border border-indigo-700/50">
+                    <h3 class="text-lg font-semibold text-indigo-300 mb-2">Your Selection</h3>
+                    <p class="text-white"><span class="text-gray-400">Asset:</span> <span id="summary-asset" class="font-bold">—</span></p>
+                    <p class="text-white"><span class="text-gray-400">Timeframe:</span> <span id="summary-timeframe" class="font-bold">—</span></p>
+                    <p class="text-white"><span class="text-gray-400">Topic ID:</span> <span id="summary-topic-id" class="font-mono text-sm">—</span></p>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 space-y-6">
+                
+                <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border-t-4 border-indigo-500">
+                    <h2 id="current-asset-title" class="text-4xl font-extrabold text-center text-white mb-2">... Awaiting Selection ...</h2>
+                    <div id="status-message" class="p-3 text-base font-medium rounded-xl text-center bg-yellow-800 text-yellow-300 border border-yellow-500 mt-4">
+                        Please select an asset pair and a valid timeframe.
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    <div class="data-card bg-gray-800/80 border-green-500/50">
+                        <span class="text-lg font-medium text-gray-400 block mb-2">Live Price (USD)</span>
+                        <span id="live-price" class="text-5xl font-extrabold text-green-400 block">—</span>
+                    </div>
+
+                    <div class="data-card bg-indigo-900/40 border-indigo-500">
+                        <span class="text-lg font-medium text-indigo-300 block mb-2">Predicted Value</span>
+                        <span id="predicted-price" class="text-5xl font-extrabold text-indigo-300 block">—</span>
+                    </div>
+
+                    <div class="data-card bg-gray-800/80 md:col-span-2">
+                        <span class="text-lg font-medium text-gray-400 block mb-2">Expected Change (from Live Price)</span>
+                        <span id="expected-change" class="text-4xl font-bold text-gray-400 block">—</span>
+                    </div>
+
+                </div>
+            </div>
         </div>
 
-        <!-- Footer and Update Information -->
-        <footer class="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700 text-center text-sm text-gray-500 dark:text-gray-400">
-            <p id="last-updated">آخرین به‌روزرسانی: در حال بارگذاری...</p>
-            <p class="mt-1">داده‌ها هر ۳۰ ثانیه از API Allora (v7) و CoinGecko واکشی می‌شوند.</p>
+        <footer class="mt-12 text-center text-xs text-gray-500">
+            <p id="last-updated">Last Updated: —</p>
+            <p class="mt-1">Prediction data provided by Allora Oracle</p>
         </footer>
     </div>
 
     <script>
         // --- Configuration and API Settings ---
-        // ⚠️ توجه: این Endpoint به احتمال زیاد خطای "Not Implemented" (کد ۵۰۱ یا ۱۲) را برمی‌گرداند.
         const ALLORA_API_KEY = "UP-662ebd02310c4509bf66dc1e"; 
-        // Endpoint ورژن ۷ مورد درخواست کاربر
-        const ALLORA_API_BASE = "https://allora-api.testnet.allora.network/emissions/v7/latest_network_inferences/";
-        
-        const LIVE_PRICE_API = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd";
+        const CHAIN_ID = "ethereum-11155111"; 
+        const ALLORA_V2_API_BASE = `https://api.allora.network/v2/allora/consumer/${CHAIN_ID}`; 
         const REFRESH_INTERVAL = 30000; // 30 seconds
 
-        // --- List of specific topics ---
-        const ALL_PREDICTION_TOPICS = [
-            { asset: "BTC", tf: "5m", topicId: 14, name_fa: "بیت‌کوین (۵ دقیقه)", cg_id: "bitcoin" },
-            { asset: "BTC", tf: "8h", topicId: 42, name_fa: "بیت‌کوین (۸ ساعت)", cg_id: "bitcoin" },
-            { asset: "BTC", tf: "1d", topicId: 69, name_fa: "بیت‌کوین (۱ روز)", cg_id: "bitcoin" },
-            
-            { asset: "ETH", tf: "5m", topicId: 13, name_fa: "اتریوم (۵ دقیقه)", cg_id: "ethereum" },
-            { asset: "ETH", tf: "6h", topicId: 46, name_fa: "اتریوم (۶ ساعت)", cg_id: "ethereum" },
-            { asset: "ETH", tf: "8h", topicId: 41, name_fa: "اتریوم (۸ ساعت)", cg_id: "ethereum" },
+        // Corrected and Verified Topic IDs
+        const TOPIC_CONFIG = {
+            "BTC/USD": {
+                "1 day": { id: 69, coinGeckoId: 'bitcoin', name: 'BTC/USD - 1 Day Prediction' },
+                "8h": { id: 42, coinGeckoId: 'bitcoin', name: 'BTC/USD - 8 Hour Prediction' },
+                "5min": { id: 14, coinGeckoId: 'bitcoin', name: 'BTC/USD - 5 Minute Prediction' }
+            },
+            "ETH/USD": {
+                "8h": { id: 41, coinGeckoId: 'ethereum', name: 'ETH/USD - 8 Hour Prediction' },
+                "5min": { id: 13, coinGeckoId: 'ethereum', name: 'ETH/USD - 5 Minute Prediction' }
+            },
+            "SOL/USD": {
+                "8h": { id: 38, coinGeckoId: 'solana', name: 'SOL/USD - 8 Hour Prediction' },
+                "5min": { id: 37, coinGeckoId: 'solana', name: 'SOL/USD - 5 Minute Prediction' },
+                "10min": { id: 5, coinGeckoId: 'solana', name: 'SOL/USD - 10 Minute Prediction' }
+            },
+            "ETH/USDC": {
+                // We'll use the ETH price for live data, as USDC is stable and we need a base price.
+                "6h": { id: 46, coinGeckoId: 'ethereum', name: 'ETH/USDC - 6 Hour Prediction' } 
+            },
+            "BNB": {
+                "20min": { id: 8, coinGeckoId: 'binancecoin', name: 'BNB/USD - 20 Minute Prediction' }
+            }
+        };
 
-            { asset: "SOL", tf: "5m", topicId: 37, name_fa: "سولانا (۵ دقیقه)", cg_id: "solana" },
-            { asset: "SOL", tf: "10m", topicId: 5, name_fa: "سولانا (۱۰ دقیقه)", cg_id: "solana" },
-            { asset: "SOL", tf: "8h", topicId: 38, name_fa: "سولانا (۸ ساعت)", cg_id: "solana" },
-        ];
-
+        // Application State
+        let selectedAsset = null; 
+        let selectedTimeframe = null; 
         let isFetching = false;
+        let fetchInterval = null;
 
-        /**
-         * Calculates percentage change and determines direction/color.
-         */
+        // --- Helper Functions ---
+
         function calculateChange(live, predicted) {
             if (!live || !predicted) return { percentage: 0, direction: '—', color: 'text-gray-500' };
-            live = parseFloat(live);
-            predicted = parseFloat(predicted);
+            const liveVal = parseFloat(live);
+            const predictedVal = parseFloat(predicted);
 
-            const percentage = ((predicted - live) / live) * 100;
-            let direction = '▬';
+            const percentage = ((predictedVal - liveVal) / liveVal) * 100;
+            let direction = '—';
             let color = 'text-gray-500';
 
-            if (percentage > 0.01) {
+            if (percentage > 0.1) { 
                 direction = '▲';
                 color = 'text-green-500';
-            } else if (percentage < -0.01) {
+            } else if (percentage < -0.1) {
                 direction = '▼';
                 color = 'text-red-500';
             }
             
             return { percentage: percentage.toFixed(2), direction, color };
         }
+        
+        // --- Fetch Logic ---
 
-        /**
-         * Fetches Allora prediction for a specific topic using the V7 endpoint.
-         */
         async function getAlloraPrediction(topicId) {
-            const alloraUrl = `${ALLORA_API_BASE}${topicId}`;
+            const apiUrl = `${ALLORA_V2_API_BASE}?allora_topic_id=${topicId}`; 
+            
             try {
-                const response = await fetch(alloraUrl, {
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
                     headers: {
-                        // API Key is MANDATORY for this V7 endpoint
-                        'x-api-key': ALLORA_API_KEY,
-                        'Accept': 'application/json'
+                        'accept': 'application/json',
+                        'x-api-key': ALLORA_API_KEY 
                     }
-                });
+                }); 
                 
                 if (!response.ok) {
-                    // This is where the HTTP 501 or 404 error will be logged
-                    console.error(`❌ API Allora HTTP Error for Topic ${topicId} (V7): ${response.status} ${response.statusText}`);
-                    // Attempt to read the JSON even on error to check for code 12 (Not Implemented)
-                    const errorData = await response.json().catch(() => ({}));
-                    if (errorData.code === 12) {
-                        console.error(`Endpoint V7 is confirmed Not Implemented by Allora Server.`);
-                    }
+                    console.error(`❌ API Error: ${response.status} ${response.statusText}.`);
                     return 0;
                 }
                 
                 const data = await response.json();
+                let normalizedValue = null;
                 
-                // Extract combined_value from the V7 structure
-                const combinedValue = data.network_inferences?.combined_value;
-
-                if (!combinedValue || parseFloat(combinedValue) === 0) {
-                    console.warn(`⚠️ Topic ${topicId}: Prediction is unavailable (V7 Endpoint). Raw response data:`, data);
+                if (data && data.data && data.data.inference_data) {
+                    normalizedValue = data.data.inference_data.network_inference_normalized;
+                }
+                
+                if (!normalizedValue || parseFloat(normalizedValue) === 0) {
                     return 0;
                 }
                 
-                return parseFloat(combinedValue);
+                return parseFloat(normalizedValue);
             } catch (error) {
-                // This will catch the 'Failed to fetch' error from the browser (CORS/Retired Endpoint)
-                console.error(`❌ Fatal Error fetching Topic ${topicId} (V7). Endpoint is likely retired or blocked by CORS.`, error.message);
+                console.error(`❌ Critical Allora API Error (Network/CORS):`, error);
+                
+                document.getElementById('status-message').textContent = '❌ Network Error! (Check console for details).';
+                document.getElementById('status-message').className = 'p-3 text-base font-medium rounded-xl text-center bg-red-700 text-red-300 border border-red-500';
+                
                 return 0; 
             }
         }
 
-        /**
-         * Fetches live prices and predictions concurrently.
-         */
         async function getFinalTrackerData() {
-            if (isFetching) return;
+            if (isFetching || !selectedAsset || !selectedTimeframe) return;
+            
+            const config = TOPIC_CONFIG[selectedAsset]?.[selectedTimeframe];
+            
+            if (!config) return;
+
             isFetching = true;
-            document.getElementById('status-message').textContent = 'در حال واکشی داده‌های جدید از شبکه Allora...';
-            document.getElementById('status-message').className = 'mt-4 p-2 text-sm font-medium rounded-lg bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+            document.getElementById('status-message').textContent = `Fetching data for ${config.name} (Topic ID: ${config.id})...`;
+            document.getElementById('status-message').className = 'p-3 text-base font-medium rounded-xl text-center bg-yellow-800 text-yellow-300 border border-yellow-500';
+
 
             try {
-                // 1. Fetch live prices concurrently
+                // 1. Fetch Live Price (using CoinGecko ID)
+                const LIVE_PRICE_API = `https://api.coingecko.com/api/v3/simple/price?ids=${config.coinGeckoId}&vs_currencies=usd`;
                 const livePricesRes = await fetch(LIVE_PRICE_API);
                 const livePrices = await livePricesRes.json();
+                const livePrice = livePrices[config.coinGeckoId]?.usd || 0;
 
-                // 2. Create promises for all topics
-                const predictionPromises = ALL_PREDICTION_TOPICS.map(async (topic) => {
-                    const prediction = await getAlloraPrediction(topic.topicId);
-                    const livePrice = livePrices[topic.cg_id]?.usd || 0;
-                    const change = calculateChange(livePrice, prediction);
-
-                    return {
-                        ...topic,
-                        livePrice: livePrice,
-                        prediction: prediction,
-                        change: change,
-                    };
-                });
-
-                // 3. Execute all promises
-                const results = await Promise.all(predictionPromises);
-                renderData(results);
+                // 2. Fetch Prediction
+                const prediction = await getAlloraPrediction(config.id);
                 
-                document.getElementById('status-message').textContent = 'عملیات واکشی کامل شد. (کنسول را برای خطا بررسی کنید)';
-                document.getElementById('status-message').className = 'mt-4 p-2 text-sm font-medium rounded-lg bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+                if (document.getElementById('status-message').classList.contains('bg-red-700')) {
+                     isFetching = false;
+                     return;
+                }
+
+                // 3. Calculate Change
+                const change = calculateChange(livePrice, prediction);
+
+                // 4. Update DOM 
+                renderData({ 
+                    topicId: config.id, 
+                    assetName: config.name, 
+                    livePrice, 
+                    prediction, 
+                    change 
+                });
+                
+                document.getElementById('status-message').textContent = `✅ ${config.name} Data updated successfully.`;
+                document.getElementById('status-message').className = 'p-3 text-base font-medium rounded-xl text-center bg-green-900 text-green-300';
 
             } catch (error) {
-                console.error("خطای کلی در واکشی داده:", error);
-                document.getElementById('status-message').textContent = 'خطای بحرانی در واکشی داده‌ها. (کنسول را بررسی کنید)';
-                document.getElementById('status-message').className = 'mt-4 p-2 text-sm font-medium rounded-lg bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+                console.error("General data fetching error:", error);
+                document.getElementById('status-message').textContent = 'Critical data fetching error! (Check console)';
+                document.getElementById('status-message').className = 'p-3 text-base font-medium rounded-xl text-center bg-red-900 text-red-300 border border-red-500';
             } finally {
                 isFetching = false;
-                document.getElementById('last-updated').textContent = `آخرین به‌روزرسانی: ${new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+                document.getElementById('last-updated').textContent = `Last Updated: ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
             }
         }
 
-        /**
-         * Renders the data to the DOM.
-         */
-        function renderData(data) {
-            const container = document.getElementById('predictions-container');
-            container.innerHTML = ''; // Clear previous content
+        function renderData({ topicId, assetName, livePrice, prediction, change }) {
+            document.getElementById('current-asset-title').textContent = assetName;
+            
+            const livePriceEl = document.getElementById('live-price');
+            const predictedPriceEl = document.getElementById('predicted-price');
+            const changeEl = document.getElementById('expected-change');
+            
+            // Update Summary Card
+            document.getElementById('summary-asset').textContent = selectedAsset;
+            document.getElementById('summary-timeframe').textContent = selectedTimeframe;
+            document.getElementById('summary-topic-id').textContent = topicId;
 
-            data.forEach(item => {
-                // Display '-' if prediction is 0
-                const predictionValue = item.prediction > 0 ? item.prediction : '—';
-                const predictionStr = predictionValue === '—' ? '—' : `$${predictionValue.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+            // Display Live Price
+            livePriceEl.textContent = livePrice > 0 ? `$${livePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—';
+            
+            // Display Prediction 
+            const predictionValue = prediction > 0 ? prediction : '—';
+            predictedPriceEl.textContent = predictionValue === '—' ? '—' : `$${predictionValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-                const livePriceStr = `$${item.livePrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
-                const changeIndicator = predictionValue === '—' ? '—' : `${item.change.direction} ${item.change.percentage}%`;
-                
-                const card = document.createElement('div');
-                card.className = `prediction-card bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700`;
-                
-                card.innerHTML = `
-                    <div class="flex justify-between items-start mb-4 border-b border-dashed pb-3 dark:border-gray-700">
-                        <h2 class="text-2xl font-bold ${item.asset === 'BTC' ? 'text-orange-500' : item.asset === 'ETH' ? 'text-gray-400' : 'text-blue-500'}">
-                            ${item.asset} - ${item.tf}
-                        </h2>
-                        <div class="text-xs font-mono text-gray-500 dark:text-gray-400 p-1 bg-gray-100 dark:bg-gray-700 rounded-md">
-                            Topic ID: ${item.topicId}
-                        </div>
-                    </div>
-                    
-                    <p class="text-md text-gray-500 dark:text-gray-400 mb-4">${item.name_fa} (پیش‌بینی)</p>
-
-                    <div class="space-y-3">
-                        <div class="flex justify-between items-center bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                            <span class="text-sm font-medium text-gray-600 dark:text-gray-300">قیمت لایو</span>
-                            <span class="text-lg font-extrabold text-gray-900 dark:text-gray-100">${livePriceStr}</span>
-                        </div>
-                        
-                        <div class="flex justify-between items-center p-3 rounded-lg border-2 ${predictionValue === '—' ? 'border-gray-300' : 'border-indigo-200 dark:border-indigo-600'} bg-indigo-50 dark:bg-gray-700/50">
-                            <span class="text-sm font-medium ${predictionValue === '—' ? 'text-gray-500' : 'text-indigo-700 dark:text-indigo-300'}">پیش‌بینی Allora</span>
-                            <span class="text-xl font-extrabold ${predictionValue === '—' ? 'text-gray-500' : 'text-indigo-700 dark:text-indigo-400'}">${predictionStr}</span>
-                        </div>
-                        
-                        <div class="flex justify-between items-center p-2 rounded-lg bg-gray-50 dark:bg-gray-700">
-                            <span class="text-sm font-medium text-gray-600 dark:text-gray-300">تغییر مورد انتظار</span>
-                            <span class="text-md font-extrabold ${item.change.color}">${changeIndicator}</span>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
+            // Display Expected Change
+            const changeIndicator = predictionValue === '—' || livePrice === 0 ? '—' : `${change.direction} ${change.percentage}%`;
+            changeEl.textContent = changeIndicator;
+            changeEl.className = `text-4xl font-bold ${change.color} block`;
         }
 
-        // --- Start Application ---
-        window.onload = function () {
-            // Initial fetch
+        // --- Dynamic UI Logic ---
+
+        function updateAssetSelectors(selectedAssetKey) {
+            document.querySelectorAll('.asset-btn').forEach(btn => {
+                btn.classList.remove('active-btn', 'inactive-btn');
+                if (btn.dataset.asset === selectedAssetKey) {
+                    btn.classList.add('active-btn');
+                } else {
+                    btn.classList.add('inactive-btn');
+                }
+            });
+        }
+        
+        function updateTimeframeSelectors(selectedAssetKey) {
+            const container = document.getElementById('timeframe-container');
+            const availableTimeframes = TOPIC_CONFIG[selectedAssetKey] ? Object.keys(TOPIC_CONFIG[selectedAssetKey]) : [];
+
+            // Clear previous buttons
+            container.innerHTML = ''; 
+            
+            if (availableTimeframes.length === 0) {
+                 container.innerHTML = '<p class="col-span-3 text-gray-500 text-sm">No valid Topic IDs found for this asset.</p>';
+                 return;
+            }
+
+            // Render new buttons
+            let selectedTfFound = false;
+            availableTimeframes.forEach(timeframe => {
+                const button = document.createElement('button');
+                button.dataset.timeframe = timeframe;
+                button.textContent = timeframe;
+                button.className = 'platform-btn inactive-btn'; // Base class
+                
+                // Check if this is the previously selected timeframe
+                if (timeframe === selectedTimeframe) {
+                    button.classList.remove('inactive-btn');
+                    button.classList.add('active-btn');
+                    selectedTfFound = true;
+                }
+
+                button.addEventListener('click', (e) => {
+                    selectedTimeframe = e.target.dataset.timeframe;
+                    updateTimeframeActiveClass(selectedTimeframe);
+                    startFetchingData();
+                });
+                
+                container.appendChild(button);
+            });
+            
+            // If the previously selected timeframe is no longer available, select the first valid one
+            if (!selectedTfFound) {
+                 selectedTimeframe = availableTimeframes[0];
+                 updateTimeframeActiveClass(selectedTimeframe);
+            }
+        }
+        
+        function updateTimeframeActiveClass(timeframe) {
+            document.querySelectorAll('#timeframe-container .platform-btn').forEach(btn => {
+                btn.classList.remove('active-btn', 'inactive-btn');
+                if (btn.dataset.timeframe === timeframe) {
+                    btn.classList.add('active-btn');
+                } else {
+                    btn.classList.add('inactive-btn');
+                }
+            });
+        }
+        
+
+        function setupEventListeners() {
+            document.querySelectorAll('.asset-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const newAsset = e.target.dataset.asset;
+                    
+                    const assetChanged = newAsset !== selectedAsset;
+                    selectedAsset = newAsset;
+                    
+                    updateAssetSelectors(newAsset);
+                    updateTimeframeSelectors(newAsset); // This will update selectedTimeframe if necessary
+
+                    if (assetChanged || selectedTimeframe) {
+                        startFetchingData();
+                    }
+                });
+            });
+        }
+        
+        function startFetchingData() {
+            if (!selectedAsset || !selectedTimeframe) {
+                // Reset/Clear displays
+                document.getElementById('current-asset-title').textContent = '... Awaiting Selection ...';
+                document.getElementById('summary-asset').textContent = '—';
+                document.getElementById('summary-timeframe').textContent = '—';
+                document.getElementById('summary-topic-id').textContent = '—';
+                document.getElementById('live-price').textContent = '—';
+                document.getElementById('predicted-price').textContent = '—';
+                document.getElementById('expected-change').textContent = '—';
+                
+                document.getElementById('status-message').textContent = '⚠️ Please select a valid asset pair and timeframe.';
+                document.getElementById('status-message').className = 'p-3 text-base font-medium rounded-xl text-center bg-red-700 text-red-300 border border-red-500';
+                
+                if (fetchInterval) clearInterval(fetchInterval);
+                fetchInterval = null;
+                return;
+            }
+
+            // Clear previous interval
+            if (fetchInterval) {
+                clearInterval(fetchInterval);
+            }
+
+            // Initial Fetch
             getFinalTrackerData();
-            // Set up automatic refresh
-            setInterval(getFinalTrackerData, REFRESH_INTERVAL);
+
+            // Start new interval
+            fetchInterval = setInterval(getFinalTrackerData, REFRESH_INTERVAL);
+        }
+
+        window.onload = function () {
+            setupEventListeners();
+            
+            // Default selection: BTC/USD, 1 day
+            selectedAsset = 'BTC/USD'; 
+            updateAssetSelectors('BTC/USD');
+            updateTimeframeSelectors('BTC/USD'); // Sets selectedTimeframe to '1 day'
+            
+            // Start fetching data with default selection
+            startFetchingData();
         };
     </script>
 </body>
-</html>
+    </html>
